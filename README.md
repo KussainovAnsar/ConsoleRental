@@ -1,4 +1,4 @@
-# Weather Forecast
+# Weather Forecast Link to the deployed site: https://weatherforcast-45di.onrender.com/register
 
 ## Overview
 Weather Forecast is a Node.js Express application for managing users and weather data. This project was created by Kussainov Ansar, a student of SE-2201.
