@@ -19,7 +19,7 @@ To access the admin panel, use the following credentials:
 
 ## API Endpoints
 - `/admin`: Admin panel for managing users and weather data.
-- `/admin/login`: Admin login page.
+- `/login/admin`: Admin login page.
 - `/admin/adduser`: Add a new user.
 - `/admin/edituser/:id`: Edit an existing user.
 - `/admin/deleteuser/:id`: Delete an existing user.
