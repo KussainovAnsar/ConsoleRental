@@ -1,5 +1,5 @@
 
-# Console Rental. Link to the deployed site: https://weatherforcast-45di.onrender.com/register
+# Console Rental. Link to the deployed site: https://consolerental.onrender.com
 
 ## Overview
 GameFusion is a Node.js application designed to manage rentals for various gaming consoles and games. This project was created by Kussainov Ansar, a student of SE-2201.
