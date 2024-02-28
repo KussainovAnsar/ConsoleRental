@@ -91,6 +91,15 @@ async function searchVideos(keyword) {
   }
 }
 
+// Route to redirect to main page if user is logged in, otherwise redirect to login page
+app.get('/', (req, res) => {
+  if (req.session && req.session.user) {
+      res.redirect('/main'); 
+  } else {
+      res.redirect('/login');
+  }
+});
+
 // Route to render the News into the main page
 app.get('/main', async (req, res) => {
   try {
@@ -120,15 +129,6 @@ app.get('/admin', async (req, res) => {
   } catch (error) {
       console.error('Error fetching items:', error);
       res.status(500).send('Internal Server Error');
-  }
-});
-
-// Route to redirect to main page if user is logged in, otherwise redirect to login page
-app.get('/', (req, res) => {
-  if (req.session && req.session.user) {
-      res.redirect('/main'); 
-  } else {
-      res.redirect('/login');
   }
 });
 
