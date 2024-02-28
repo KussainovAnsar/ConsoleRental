@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Weather Forecast. Link to the deployed site: https://weatherforcast-45di.onrender.com/register
 
 ## Overview
@@ -27,3 +28,6 @@ To access the admin panel, use the following credentials:
 - local time API
 - weather forcast API
 
+=======
+# ConsoleRental
+>>>>>>> 41294fdc545364e731d382e4e2574c5051f030d3
