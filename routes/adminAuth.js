@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
 
+
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     console.log('Received login request for username:', username); 
-    if (username === 'admin' && password === 'Qqwerty1!') {
+    if (username === 'Ansar' && password === 'Qqwerty1!') {
         try {
             const user = await User.findOne({ username });
             console.log('User found in database:', user); 

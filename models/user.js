@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
     userId: { type: Number, unique: true },
     username: { type: String, required: true, unique: true },
+    surname: { type: String, required: true },
+    phone: { type: Number, required: true, unique: true },
     password: { type: String, required: true },
     creationDate: { type: Date, default: Date.now },
     updateDate: { type: Date, default: Date.now },
@@ -26,4 +28,3 @@ userSchema.pre('save', async function(next) {
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
-

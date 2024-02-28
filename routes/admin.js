@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
-const Weather = require('../models/weather');
+const Quiz = require('../models/quiz');
+const Item = require('../models/item');
 
 function isAdmin(req, res, next) {
     if (req.session && req.session.user && req.session.user.isAdmin) {
@@ -14,14 +15,13 @@ function isAdmin(req, res, next) {
 router.get('/adminpanel', isAdmin, async (req, res) => {
     try {
         const users = await User.find();
-        const weatherData = await Weather.find(); 
-        res.render('adminpanel', { users, weatherData }); 
+        const item = await Item.find(); // Fetch items from the database
+        res.render('adminpanel', { users, item, }); 
     } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching data:', error);
         res.status(500).send('Internal Server Error');
     }
 });
-
 
 router.post('/adduser', async (req, res) => {
     const { username, password } = req.body;
@@ -66,6 +66,7 @@ router.delete('/deleteuser/:userId', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
 
 module.exports = router;
 

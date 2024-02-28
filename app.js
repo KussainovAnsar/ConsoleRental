@@ -2,209 +2,158 @@ const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const bodyParser = require('body-parser');
-const https = require('https');
 const path = require('path');
-const adminRoutes = require('./routes/admin');
-const Weather = require('./models/weather');
-const User = require('./models/user');
-const adminAuth = require('./routes/adminAuth');
 const app = express();
+const axios = require('axios');
+const i18n = require('i18n');
+
+const adminRoutes = require('./routes/admin');
+const User = require('./models/user');
+const Item = require('./models/item');
+const Quiz = require('./models/quiz');
+const adminAuth = require('./routes/adminAuth');
+const aboutRouter = require('./routes/about');
+const contactRouter = require('./routes/contact');
+const bonusRouter = require('./routes/bonus');
+
 const port = 3000;
 
-mongoose.connect('mongodb+srv://practice:Ansar123@cluster0.eotba7o.mongodb.net/WeatherForcast?retryWrites=true&w=majority', {
+// MongoDB connection
+mongoose.connect('mongodb+srv://practice:Ansar123@cluster0.eotba7o.mongodb.net/ConsoleRental?retryWrites=true&w=majority&appName=Cluster0', {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.log(err));
 
+// Configure i18n
+i18n.configure({
+  locales: ['ru', 'kz', 'ja'],
+  defaultLocale: 'en',
+  directory: __dirname + '/locales',
+  cookie: 'lang'
+});
+
+// Middleware setup
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
 app.use(session({ 
   secret: 'rejimvdfmvdimscwe123',
   resave: false,
   saveUninitialized: false
 })); 
-
 app.use(express.static(path.join(__dirname, 'views')));
-
-
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Routes setup
 const loginRouter = require('./routes/login');
 const registerRouter = require('./routes/register');
-
+app.use(i18n.init);
 app.use('/login', loginRouter);
 app.use('/register', registerRouter);
 app.use('/admin', adminAuth); 
 app.use('/admin', adminRoutes);
+app.use('/about', aboutRouter);
+app.use('/contact', contactRouter);
+app.use('/bonus', bonusRouter);
 
-app.get('/index', (req, res) => {
-  res.render('index'); 
+// Language switch route
+app.post('/setLanguage', function(req, res) {
+  var selectedLanguage = req.body.language;
+  req.session.language = selectedLanguage;
+  res.sendStatus(200);
 });
 
+// Function to search videos
+async function searchVideos(keyword) {       
+  const API_URL = 'https://www.googleapis.com/youtube/v3/search';
+  const youTubeAPI = 'AIzaSyDIcyq7D-vsf4_rPxnuGiZUDwtk4pKxTSc'; // YouTube API key
+
+  const url = new URL(API_URL);
+  url.searchParams.append('part', 'snippet');
+  url.searchParams.append('q', keyword);
+  url.searchParams.append('maxResults', 4); 
+  url.searchParams.append('key', youTubeAPI);
+
+  try {
+      const response = await axios.get(url.toString());
+      const videos = response.data.items.map(video => ({
+          videoId: video.id.videoId,
+          title: video.snippet.title,
+          thumbnail: video.snippet.thumbnails.default.url,
+          videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}`
+      }));
+      return videos;
+  } catch (error) {
+      console.error('Error fetching videos:', error);
+      return []; 
+  }
+}
+
+// Route to render the News into the main page
+app.get('/main', async (req, res) => {
+  try {
+      const url = 'https://newsapi.org/v2/everything?' +
+          'q=Nintendo&Xbox&PlayStation&Console&Games&Realese' +     // News and YouTube API realization's
+          'from=2024-02-26&' +
+          'sortBy=popularity&' +
+          'apiKey=6173012026564199bb1d7f51be715ebf';  // News API key
+
+      const response = await axios.get(url);
+      const gameNews = response.data.articles.slice(0, 12); 
+
+      const videos = await searchVideos(['PlayStation 4 and 5 review', 'Xbox review', 'Nintendo review']);
+
+      res.render('main', { gameNews, videos });
+  } catch (error) {
+      console.error('Error fetching game news:', error);
+      res.render('main', { gameNews: [], videos: [] });
+  }
+});
+
+// Route to render the admin panel
+app.get('/admin', async (req, res) => {
+  try {
+      const items = await Item.find({}); 
+      res.render('adminpanel', { items });
+  } catch (error) {
+      console.error('Error fetching items:', error);
+      res.status(500).send('Internal Server Error');
+  }
+});
+
+// Route to redirect to main page if user is logged in, otherwise redirect to login page
 app.get('/', (req, res) => {
   if (req.session && req.session.user) {
-      res.redirect('/index'); 
+      res.redirect('/main'); 
   } else {
       res.redirect('/login');
   }
 });
 
+app.get('/main/admin', (req, res) => {
+  res.render('admin-login');
+});
+
 app.get('/login/admin', (req, res) => {
-  res.render('admin-login'); 
+  res.render('admin-login');
 });
 
-app.get('/admin', (req, res) => {
-  res.redirect('/admin/login');
+app.get('/admin', async (req, res) => {
+  try {
+    // Fetch items from the database
+    const items = await Item.find({});
+    // Render the admin panel template with the items data
+    res.render('adminpanel', { item: item });
+  } catch (error) {
+    // Handle errors
+    console.error('Error fetching items:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
-
-
-const apiKey = '0e6b9a1893a47c1f2fd8c3d909372714';
-const googleMapKey = 'AIzaSyDIcyq7D-vsf4_rPxnuGiZUDwtk4pKxTSc';
-const timeZoneApiKey = 'QU8YLVHYKXH6';
-
-app.get('/weather', (req, res) => {
-    const cityName = req.query.city;
-    if (!cityName) {
-      return res.status(400).json({ error: 'City parameter is required' });
-    }
-  
-    const weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${apiKey}`;
-  
-    https.get(weatherURL, (response) => {
-      let data = '';
-      response.on('data', (chunk) => {
-        data += chunk;
-      });
-  
-      response.on('end', async () => {
-        try {
-          const weatherData = JSON.parse(data);
-          if (
-            weatherData &&
-            weatherData.main &&
-            weatherData.main.temp &&
-            weatherData.weather &&
-            weatherData.weather[0] &&
-            weatherData.weather[0].description &&
-            weatherData.weather[0].icon &&
-            weatherData.coord &&
-            weatherData.main.feels_like &&
-            weatherData.main.humidity &&
-            weatherData.main.pressure &&
-            weatherData.wind &&
-            weatherData.wind.speed &&
-            weatherData.sys &&
-            weatherData.sys.country
-          ) {
-            const celsiusTemperature = (weatherData.main.temp - 273.15).toFixed(1);
-
-            const newWeather = new Weather({
-              cityName: cityName,
-              temperature: celsiusTemperature,
-              description: weatherData.weather[0].description,
-              icon: weatherData.weather[0].icon,
-              coordinates: weatherData.coord,
-              feelsLike: (weatherData.main.feels_like - 273.15).toFixed(1),
-              humidity: weatherData.main.humidity,
-              pressure: weatherData.main.pressure,
-              windSpeed: weatherData.wind.speed,
-              countryCode: weatherData.sys.country,
-              rainVolume: weatherData.rain ? weatherData.rain['1h'] : 0,
-            });
-
-            await newWeather.save();
-
-           
-            res.json({
-              city: weatherData.name,
-              temperature: { celsius: celsiusTemperature },
-              description: weatherData.weather[0].description,
-              icon: weatherData.weather[0].icon,
-              coordinates: weatherData.coord,
-              feelsLike: (weatherData.main.feels_like - 273.15).toFixed(1),
-              humidity: weatherData.main.humidity,
-              pressure: weatherData.main.pressure,
-              windSpeed: weatherData.wind.speed,
-              countryCode: weatherData.sys.country,
-              rainVolume: weatherData.rain ? weatherData.rain['1h'] : 0,
-            });
-          } else {
-            console.error('Error parsing weather data: Response format is not as expected.');
-            res.status(500).json({ error: 'Internal Server Error' });
-          }
-        } catch (error) {
-          console.error('Error parsing weather data:', error);
-          res.status(500).json({ error: 'Internal Server Error' });
-        }
-      });
-    }).on('error', (error) => {
-      console.error('Error fetching weather data:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    });
-});
-
-
-app.get('/timezone', (req, res) => {
-    const lat = req.query.lat;
-    const lon = req.query.lon;
-    if (!lat || !lon) {
-      return res.status(400).json({ error: 'Latitude and longitude parameters are required' });
-    }
-  
-    const timeZoneURL = `https://api.timezonedb.com/v2.1/get-time-zone?key=${timeZoneApiKey}&format=json&by=position&lat=${lat}&lng=${lon}`;
-  
-    https.get(timeZoneURL, (response) => {
-      let data = '';
-      response.on('data', (chunk) => {
-        data += chunk;
-      });
-  
-      response.on('end', () => {
-        try {
-          const timeZoneData = JSON.parse(data);
-          res.json(timeZoneData);
-        } catch (error) {
-          console.error('Error parsing time zone data:', error);
-          res.status(500).json({ error: 'Internal Server Error' });
-        }
-      });
-    }).on('error', (error) => {
-      console.error('Error fetching time zone data:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    });
-});
-
-app.get('/map', (req, res) => {
-    const lat = req.query.lat;
-    const lon = req.query.lon;
-    if (!lat || !lon) {
-      return res.status(400).json({ error: 'Latitude and longitude parameters are required' });
-    }
-  
-    const mapURL = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=10&size=400x300&key=${googleMapKey}`;
-  
-    https.get(mapURL, (response) => {
-      let imageData = '';
-      response.setEncoding('binary');
-      response.on('data', (chunk) => {
-        imageData += chunk;
-      });
-  
-      response.on('end', () => {
-        res.writeHead(200, { 'Content-Type': 'image/jpeg' });
-        res.end(imageData, 'binary');
-      });
-    }).on('error', (error) => {
-      console.error('Error fetching map data:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    });
-});
-
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
+

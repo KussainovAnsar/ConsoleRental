@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
+const bcrypt = require('bcrypt');
+
 
 router.get('/', (req, res) => {
     res.render('login');
@@ -12,8 +14,9 @@ router.post('/', async (req, res) => {
         const user = await User.findOne({ username });
 
         if (user) {
-            if (user.password === password) {
-                res.redirect('/index');
+            const isPasswordMatch = await bcrypt.compare(password, user.password);
+            if (isPasswordMatch) {
+                res.redirect('/main');
             } else {
                 res.send('Invalid password');
             }
@@ -25,5 +28,6 @@ router.post('/', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
 
 module.exports = router;

@@ -3,22 +3,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
-    <link rel="stylesheet" href="/stylelogin.css"> 
+    <link rel="stylesheet" href="stylelogin.css"> 
 </head>
 <body class="container">
     <h1>Register</h1>
-    <form action="/register" method="POST">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <button type="submit">Register</button>
+    <form id="registrationForm" action="/register" method="post">
+        <input type="text" name="username" id="username" placeholder="Username">
+        <span id="usernameError" class="error"></span> 
+        <input type="text" name="surname" id="surname" placeholder="Surname">
+        <span id="surnameError" class="error"></span>
+        <input type="text" name="phone" id="phone" placeholder="Phone">
+        <span id="phoneError" class="error"></span>
+        <input type="password" name="password" id="password" placeholder="Password">
+        <span id="passwordError" class="error"></span> 
+        <button type="submit" id="registerButton">Register</button>
     </form>
+    
     <p>Already have an account? <a href="/login">Login</a></p>
 
     <footer>
         <p>&copy; Kussaionov Ansar | Group 2201</p>
     </footer>
     
+    <script>
+        document.getElementById('registrationForm').addEventListener('submit', async function(event) {
+            
+            const username = document.getElementById('username').value;
+            const surname = document.getElementById('surname').value;
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+
+            const errorMessages = [];
+
+            if (!/^[\w-]{3,}$/.test(username)) {
+                errorMessages.push('Username should contain at least 3 alphanumeric characters');
+                event.preventDefault(); 
+            }
+
+            if (password.length < 8) {
+                errorMessages.push('Password should be at least 8 characters long');
+                event.preventDefault(); 
+            }
+
+            if (!/^\+?\d{11}$/.test(phone)) {
+                errorMessages.push('Phone number should start with + and contain 11 digits');
+                event.preventDefault(); 
+            }
+
+            const errorContainer = document.getElementById('errorMessages');
+            errorContainer.innerHTML = errorMessages.map(message => `<div>${message}</div>`).join('');
+
+            if (errorMessages.length === 0) {
+                this.submit();
+            }
+        });
+    </script>
 </body>
 </html>
+
+
